@@ -1,6 +1,7 @@
 import './index.css';
 import 'leaflet/dist/leaflet.css';
 import {Control, Map as LeafletMap, TileLayer} from "leaflet";
+import {Config} from "./types/configType";
 
 
 const map = new LeafletMap("map");
@@ -15,29 +16,19 @@ const layersControl = new Control.Layers();
 layersControl.addTo(map);
 
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-window.bridge.sendBaseLayer((event, layers: { name: string; path: string; }[]) => {
-    console.log(layers);
-    let first = true;
-    layers.forEach((layerInfo) => {
-        const layer = new TileLayer(`my-protocol://${layerInfo.path}`);
-        layersControl.addBaseLayer(layer, layerInfo.name);
-        if (first){
-            layer.addTo(map);
-            first = false;
-        }
-    });
-});
-// @ts-ignore
-window.bridge.sendOverlayLayer((event, layers: { name: string; path: string; }[]) => {
-    console.log(layers);
-    layers.forEach((layerInfo) => {
-        const layer = new TileLayer(`my-protocol://${layerInfo.path}`);
-        layersControl.addOverlay(layer, layerInfo.name);
-    });
-});
-
-// @ts-ignore
-window.bridge.sendMessage((event, message: any) => {
-    console.log(message);
+window.bridge.sendConfig((event, config: Config) => {
+    console.log('Received config', config);
+    
+    for (const mapInfo of config.maps) {
+        const layer = new TileLayer(`my-protocol://${mapInfo.path}`);
+        layersControl.addBaseLayer(layer, mapInfo.name);
+        layer.addTo(map);
+    }    
+    for (const mapInfo of config.overlays) {
+        const layer = new TileLayer(`my-protocol://${mapInfo.path}`);
+        layersControl.addOverlay(layer, mapInfo.name);
+        layer.addTo(map);
+    }
 });

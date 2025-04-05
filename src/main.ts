@@ -1,28 +1,120 @@
-import {app, BrowserWindow, net, protocol} from 'electron';
+import {app, BrowserWindow, dialog, Menu, net, protocol} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import {Config} from "./types/configType";
 
-function getOverlaysFromArgs(): { name: string; path: string; }[] {
-    const overlays: { name: string; path: string; }[] = [];
-    for (let i = 0; i < process.argv.length; i++) {
-        if (process.argv[i].startsWith("--overlay=")) {
-            const overlayPath = process.argv[i].substring(10);
-            overlays.push({name: "Overlay-" + i, path: overlayPath});
-        }
-    }
-    return overlays
+
+const config = new Config();
+
+
+async function openMap() {
+    const res = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+    });
+
+    res.filePaths.forEach((filePath) => {
+        config.maps.push({name: "Map-" + filePath, path: filePath + "/{z}/{x}/{y}.png"});
+    });
+
+    BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('sendConfig', config);
+    })
 }
 
-function getMapsFromArgs(): { name: string; path: string; }[] {
-    const maps: { name: string; path: string; }[] = [];
-    for (let i = 0; i < process.argv.length; i++) {
-        if (process.argv[i].startsWith("--map=")) {
-            const overlayPath = process.argv[i].substring(6);
-            maps.push({name: "Map-" + i, path: overlayPath});
-        }
-    }
-    return maps
+async function openOverlay() {
+    const res = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+    });
+
+    res.filePaths.forEach((filePath) => {
+        config.overlays.push({name: "Overlay-" + filePath, path: filePath + "/{z}/{x}/{y}.png"});
+    });
+
+    BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('sendConfig', config);
+    });
 }
+
+async function loadConfig() {
+    const res = await dialog.showOpenDialog({
+        title: "Open Config",
+        defaultPath: path.join(app.getPath('documents'), 'config.json'),
+        properties: ['openFile']
+    });
+    if (res.canceled) {
+        return;
+    }
+    const filePath = res.filePaths[0];
+    config.loadFromFile(filePath);
+    BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('sendConfig', config);
+    });
+}
+
+const template = [
+    {
+        label: 'Start',
+        submenu: [
+            {
+                label: 'Help',
+                click() {
+                    dialog.showMessageBox({
+                        type: "info",
+                        message: "This is a help message.",
+                        buttons: ["OK"]
+                    });
+                }
+            }
+        ]
+    },
+    {
+        label: 'Config',
+        submenu: [
+            {
+                label: 'Save Config',
+                click() {
+                    dialog.showSaveDialog({
+                        title: "Save Config",
+                        defaultPath: path.join(app.getPath('documents'), 'config.json'),
+                    })
+                        .then((result) => {
+                            console.log(result.filePath);
+                            if (result.filePath) {
+                                config.saveToFile(result.filePath);
+                            }
+                        });
+                }
+            },
+            {
+                label: 'Open Config',
+                click() {
+                    loadConfig();
+                }
+            }
+        ]
+    },
+    {
+        label: 'Maps',
+        submenu: [
+            {
+                label: 'Add Map',
+                click() {
+                    openMap();
+                }
+            },
+            {
+                label: 'Add Overlay',
+                click() {
+                    openOverlay();
+                }
+            }
+        ]
+    }
+]
+const menu = Menu.buildFromTemplate(template);
+
+Menu.setApplicationMenu(menu);
+
 
 if (started) {
     app.quit();
@@ -33,23 +125,19 @@ const createWindow = () => {
         width: 800,
         height: 600,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),    
+            preload: path.join(__dirname, 'preload.js'),
         },
     });
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL)
-            .then(() => { 
-                mainWindow.webContents.send('sendBaseLayer', getMapsFromArgs()); 
-                mainWindow.webContents.send('sendOverlayLayer', getOverlaysFromArgs());
-                mainWindow.webContents.send('sendMessage', process.argv);
+            .then(() => {
+                mainWindow.webContents.send('sendConfig', config);
             });
     } else {
         mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`))
             .then(() => {
-                mainWindow.webContents.send('sendBaseLayer', getMapsFromArgs());
-                mainWindow.webContents.send('sendOverlayLayer', getOverlaysFromArgs());
-                mainWindow.webContents.send('sendMessage', process.argv);
+                mainWindow.webContents.send('sendConfig', config);
             });
     }
 };
