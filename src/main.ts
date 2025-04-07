@@ -2,6 +2,7 @@ import {app, BrowserWindow, dialog, Menu, net, protocol} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import {Config} from "./types/configType";
+import {MapType} from "./types/MapInfo";
 
 
 const config = new Config();
@@ -13,7 +14,13 @@ async function openMap() {
     });
 
     res.filePaths.forEach((filePath) => {
-        config.maps.push({name: "Map-" + filePath, path: filePath + "/{z}/{x}/{y}.png"});
+        const newLocalMap = {
+            name: "Map-" + filePath,
+            type: MapType.MAP,
+            path: filePath + "/{z}/{x}/{y}.png"
+        }
+
+        config.maps.push(newLocalMap);
     });
 
     BrowserWindow.getAllWindows().forEach(win => {
@@ -27,7 +34,12 @@ async function openOverlay() {
     });
 
     res.filePaths.forEach((filePath) => {
-        config.overlays.push({name: "Overlay-" + filePath, path: filePath + "/{z}/{x}/{y}.png"});
+        const newLocalMap = {
+            name: "Overlay-" + filePath,
+            type: MapType.OVERLAY,
+            path: filePath + "/{z}/{x}/{y}.png"
+        }
+        config.maps.push(newLocalMap);
     });
 
     BrowserWindow.getAllWindows().forEach(win => {
