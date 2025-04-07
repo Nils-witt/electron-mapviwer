@@ -24,4 +24,5 @@ jobs:
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
+          name: outout-${{ matrix.os }}
           path: out
