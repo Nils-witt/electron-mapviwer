@@ -1,7 +1,7 @@
 {
   "name": "electron-osm-mapviwer",
   "productName": "electron-osm-mapviwer",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Electron OSM Map Viewer",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -15,6 +15,10 @@
   "author": {
     "name": "Nils Witt",
     "email": "nils@nils-witt.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nils-witt/electron-mapviewer.git"
   },
   "license": "MIT",
   "devDependencies": {

@@ -2,7 +2,7 @@ import {contextBridge, ipcRenderer} from 'electron';
 
 contextBridge.exposeInMainWorld(
     'bridge', {
-        sendConfig: (message: any) => {
+        sendConfig: (message: never) => {
             ipcRenderer.on('sendConfig', message);
         }
     }
