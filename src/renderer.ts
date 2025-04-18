@@ -3,18 +3,24 @@ import 'leaflet/dist/leaflet.css';
 import {Control, Map as LeafletMap, TileLayer} from "leaflet";
 import {Config} from "./types/configType";
 
+declare global {
+    interface Window {
+        bridge: {
+            sendConfig: (callback: (event: Electron.IpcRendererEvent, config: Config) => void) => void;
+        }
+    }
+}
+
 
 const map = new LeafletMap("map");
 
 map.setView([50.722818, 7.14545], 13);
 map.setMaxZoom(22);
 
-const layersControl = new Control.Layers({},{},{
-    autoZIndex: false, 
+const layersControl = new Control.Layers({}, {}, {
+    autoZIndex: false,
 });
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 layersControl.addTo(map);
 
 
@@ -29,8 +35,6 @@ osm_online.addTo(map);
 const loadedMaps: string[] = []
 
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 window.bridge.sendConfig((event, config: Config) => {
     console.log('Received config', config);
     let firstBaseLayer = true;
@@ -39,10 +43,10 @@ window.bridge.sendConfig((event, config: Config) => {
         console.log('MapInfo', mapInfo);
         if (loadedMaps.includes(mapInfo.name)) {
             continue;
-        }else {
+        } else {
             loadedMaps.push(mapInfo.name);
         }
-        
+
         if (mapInfo.path) {
             const layer = new TileLayer(`my-protocol://${mapInfo.path}`);
             if (mapInfo.type == 'overlay') {

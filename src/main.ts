@@ -3,10 +3,14 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import {Config} from "./types/configType";
 import {MapType} from "./types/MapInfo";
+import * as fs from "node:fs";
 
 
 const config = new Config();
 
+if (fs.existsSync(path.join(app.getPath('documents'), 'config.json'))) {
+    config.loadFromFile(path.join(app.getPath('documents'), 'config.json'));
+}
 
 async function openMap() {
     const res = await dialog.showOpenDialog({
@@ -139,6 +143,7 @@ const createWindow = () => {
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
         },
+        title: "Map Viewer",
     });
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
