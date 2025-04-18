@@ -6,7 +6,7 @@ on:
       'v*.*.*'
 
 jobs:
-  build_files:
+  release_files:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
