@@ -171,6 +171,15 @@ const template = [
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 
+protocol.registerSchemesAsPrivileged([
+    {
+        scheme: 'my-protocol',
+        privileges: {
+            supportFetchAPI: true
+        }
+    }
+]);
+
 // Handle Squirrel startup events
 if (started) {
     app.quit();
@@ -200,6 +209,8 @@ function createWindow(): void {
     }).catch(error => {
         console.error('Failed to load window content:', error);
     });
+    
+    mainWindow.openDevTools();
 }
 
 app.on('ready', () => {
