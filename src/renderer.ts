@@ -1,70 +1,101 @@
 import './index.css';
-import 'leaflet/dist/leaflet.css';
-import {Control, Map as LeafletMap, TileLayer} from "leaflet";
 import {Config} from "./types/configType";
+import {Map as MapLibreMap, NavigationControl} from "maplibre-gl";
+
+declare global {
+    interface Window {
+        bridge: {
+            sendConfig: (callback: (event: Electron.IpcRendererEvent, config: Config) => void) => void;
+        }
+    }
+}
 
 
-const map = new LeafletMap("map");
-
-map.setView([50.722818, 7.14545], 13);
-map.setMaxZoom(22);
-
-const layersControl = new Control.Layers({},{},{
-    autoZIndex: false, 
+const map = new MapLibreMap({
+    container: 'map',
+    center: [7.102405, 50.733404],
+    zoom: 17,
+    rollEnabled: true,
 });
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-layersControl.addTo(map);
-
-
-const osm_online = new TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxNativeZoom: 19,
-    maxZoom: 21,
+map.addSource('osm', {
+    type: 'raster',
+    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+    tileSize: 256
 });
-layersControl.addBaseLayer(osm_online, 'OSM Online');
-osm_online.addTo(map);
 
+map.addLayer({
+    id: 'osm-layer',
+    type: 'raster',
+    source: 'osm',
+});
+
+
+map.addControl(new NavigationControl({
+    visualizePitch: true,
+    visualizeRoll: true,
+    showZoom: true,
+    showCompass: true
+}));
+
+
+
+
+//TODO add a layer control
 
 const loadedMaps: string[] = []
 
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 window.bridge.sendConfig((event, config: Config) => {
     console.log('Received config', config);
-    let firstBaseLayer = true;
+    loadedMaps.length = 0; 
 
     for (const mapInfo of config.maps) {
         console.log('MapInfo', mapInfo);
         if (loadedMaps.includes(mapInfo.name)) {
             continue;
-        }else {
+        } else {
             loadedMaps.push(mapInfo.name);
         }
-        
+
         if (mapInfo.path) {
-            const layer = new TileLayer(`my-protocol://${mapInfo.path}`);
             if (mapInfo.type == 'overlay') {
-                layersControl.addOverlay(layer, mapInfo.name);
-            } else {
-                layersControl.addBaseLayer(layer, mapInfo.name);
-                if (firstBaseLayer) {
-                    layer.addTo(map);
-                    firstBaseLayer = false;
+                if (map.getSource(mapInfo.name) == undefined) {
+                    map.addSource(mapInfo.name, {
+                        type: 'raster',
+                        tiles: [`my-protocol://${mapInfo.path}`],
+                        tileSize: 256
+                    });
                 }
+
+                if (map.getLayer(mapInfo.name) == undefined) {
+                    map.addLayer({
+                        id: mapInfo.name,
+                        type: 'raster',
+                        source: mapInfo.name,
+                    });
+                }
+            } else {
+                //TODO add baselayer loading
             }
         } else if (mapInfo.url) {
-            const layer = new TileLayer(mapInfo.url);
             if (mapInfo.type == 'overlay') {
-                layersControl.addOverlay(layer, mapInfo.name);
-            } else {
-                layersControl.addBaseLayer(layer, mapInfo.name);
-                if (firstBaseLayer) {
-                    layer.addTo(map);
-                    firstBaseLayer = false;
+                if (map.getSource(mapInfo.name) == undefined) {
+                    map.addSource(mapInfo.name, {
+                        type: 'raster',
+                        tiles: [mapInfo.url],
+                        tileSize: 256
+                    });
+                }
+
+                if (map.getLayer(mapInfo.name) == undefined) {
+                    map.addLayer({
+                        id: mapInfo.name,
+                        type: 'raster',
+                        source: mapInfo.name,
+                    });
                 }
             }
+            //TODO add baselayer loading
         }
     }
 });

@@ -1,5 +1,3 @@
-
-
 export enum MapType {
     MAP = 'map',
     OVERLAY = 'overlay',
